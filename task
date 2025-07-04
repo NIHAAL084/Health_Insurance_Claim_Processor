@@ -1,0 +1,81 @@
+we will building a new project called Health_Insurance_Claim_Processor(the folder we are in is the root folder) an agentic backend pipeline that processes medical insurance claim documents using AI tools, fastapi and google agent development kit (google-adk)
+Code should be modular, clean, and organized (include tests)
+**keep things simple**
+there are 4 samle pdf in the test folder for testing
+we will be using gemini api key from google ai studio not vertex ai. the actual api key will be entered in the .env file before we begin testing use some placeholder. also set the variable googlegenaiusevertexai as false.
+A single FastAPI endpoint(/process-claim)[FastAPI backend using async where appropriate] that:
+1.	Accepts multiple PDF files (e.g., bill, discharge summary, claim correspondance, etc)
+[File upload support (multipart/form-data)]
+2.	Extracts text using LLM like gemini
+
+3.	Classifies each document using an LLM-based agent like gemini based on filename and content
+[you are given a single pdf with one document or multiple pdf with one document each or single pdf consisting of multiple documents 
+you have to  go through all the documents extract the text from them and then classify them based on filename and or content,
+ to output what type they are (e.g., bill, ID card, discharge summary, claim correspondance, etc) as well as separate the documents based on the type if necessary]
+
+4.	Processes extracted text using multiple AI agents parallelly (e.g., BillAgent, DischargeAgent)
+[BillAgent processes the bill document, DischargeAgent processes the discharge summary document]
+
+5.	Structures the text into a defined JSON schema
+
+6.	Validates the structured output for missing data or inconsistencies
+
+7.	Returns a final claim decision (approve/reject) with reasons
+
+[
+overall strucure of the multi agent system 
+validation_agent(Validates the structured output for missing data or inconsistencies)
+claim_processing_agent(Returns a final claim decision (approve/reject) with reasons)
+
+sequentialflow(ocr_agent,document_agent,parallelflow(bill_processing_agent,discharge_processing_agent),validation_agent,claim_processing_agent)
+
+use SequentialAgent, ParallelAgent for designing the proper workflow.
+ocr_agent,document_agent,bill_processing_agent,discharge_processing_agent,validation_agent,claim_processing_agent will be defined as LlmAgent
+
+ parallel_process_agent = ParallelAgent(
+     name="parallel_process_agent",
+     sub_agents=[bill_processing_agent, discharge_processing_agent],
+     description=".."
+ )
+Health_Insurance_Claim_Processor_Agent = SequentialAgent(
+    name="Health_Insurance_Claim_Processor_Agent",
+    sub_agents=[ocr_agent,document_agent,parallel_process_agent,validation_agent,claim_processing_agent],
+    description=""
+)
+]
+
+JSON Output
+{
+  "documents": [
+    {
+      "type": "bill",
+      "hospital_name": "ABC Hospital",
+      "total_amount": 12500,
+      "date_of_service": "2024-04-10",
+      "content": "text from the bill document"
+    },
+    {
+      "type": "discharge_summary",
+      "patient_name": "John Doe",
+      "diagnosis": "Fracture",
+      "admission_date": "2024-04-01",
+      "discharge_date": "2024-04-10",
+      "content": "text from the discharge summary document"
+    }
+  ],
+  "validation": {
+    "missing_documents": [],
+    "discrepancies": []
+  },
+  "claim_decision": {
+    "status": "approved",
+    "reason": "All required documents present and data is consistent"
+  }
+}
+
+use context7 mcp protocol for getting accurate information for generating the codes
+setup Redis/Postgres, or vector store for storing the data where and if needed
+use docker for running the services
+use uv package manager
+
+**use a simple structure for the project and the codes**
