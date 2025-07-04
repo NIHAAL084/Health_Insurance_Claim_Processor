@@ -1,11 +1,14 @@
-"""OCR Agent for extracting text from PDF documents using Gemini API"""
+"""OCR Agent for extracting text from PDF documents using Ollama"""
 
 from google.adk.agents import LlmAgent
-from google.genai import types
+from google.adk.models.lite_llm import LiteLlm
+from ..utils.config import get_settings
 
 
 def create_ocr_agent() -> LlmAgent:
     """Create and configure the OCR agent for text extraction"""
+    
+    settings = get_settings()
     
     instruction = """
     You are an OCR (Optical Character Recognition) agent specialized in extracting text from medical documents.
@@ -26,7 +29,7 @@ def create_ocr_agent() -> LlmAgent:
         name="OCRAgent",
         description="Extracts text content from PDF documents using AI-powered OCR",
         instruction=instruction,
-        model="gemini-2.0-flash-exp",
+        model=LiteLlm(f"ollama/{settings.ollama_model}"),
         output_key="extracted_text"
     )
     

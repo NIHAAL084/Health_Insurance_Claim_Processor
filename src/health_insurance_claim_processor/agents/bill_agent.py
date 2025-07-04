@@ -1,10 +1,14 @@
 """Bill Processing Agent for extracting structured data from medical bills"""
 
 from google.adk.agents import LlmAgent
+from google.adk.models.lite_llm import LiteLlm
+from ..utils.config import get_settings
 
 
 def create_bill_processing_agent() -> LlmAgent:
     """Create and configure the bill processing agent"""
+    
+    settings = get_settings()
     
     instruction = """
     You are a bill processing agent specialized in extracting structured data from medical bills and invoices.
@@ -44,7 +48,7 @@ def create_bill_processing_agent() -> LlmAgent:
         name="BillProcessingAgent",
         description="Extracts structured data from medical bills and invoices",
         instruction=instruction,
-        model="gemini-2.0-flash-exp",
+        model=LiteLlm(f"ollama/{settings.ollama_model}"),
         output_key="bill_data"
     )
     

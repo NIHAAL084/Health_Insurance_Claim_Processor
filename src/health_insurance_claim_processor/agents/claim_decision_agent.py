@@ -1,10 +1,14 @@
 """Claim Decision Agent for making final approve/reject decisions"""
 
 from google.adk.agents import LlmAgent
+from google.adk.models.lite_llm import LiteLlm
+from ..utils.config import get_settings
 
 
 def create_claim_decision_agent() -> LlmAgent:
     """Create and configure the claim decision agent"""
+    
+    settings = get_settings()
     
     instruction = """
     You are a claim decision agent specialized in making final approve/reject decisions for medical insurance claims.
@@ -72,8 +76,10 @@ def create_claim_decision_agent() -> LlmAgent:
         name="ClaimDecisionAgent",
         description="Makes final approve/reject decisions for insurance claims",
         instruction=instruction,
-        model="gemini-2.0-flash-exp",
+        model=LiteLlm(f"ollama/{settings.ollama_model}"),
         output_key="claim_decision"
     )
+    
+    return claim_decision_agent
     
     return claim_decision_agent

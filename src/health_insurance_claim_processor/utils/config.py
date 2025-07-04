@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     google_api_key: str = "your_gemini_api_key_here"
     google_genai_use_vertex_ai: bool = False
     
+    # Ollama Configuration
+    ollama_model: str = "llama3.2:3b"
+    
     # FastAPI Configuration
     app_name: str = "Health Insurance Claim Processor"
     app_version: str = "0.1.0"

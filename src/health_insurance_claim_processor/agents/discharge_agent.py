@@ -1,10 +1,14 @@
 """Discharge Summary Processing Agent for extracting structured data from discharge summaries"""
 
 from google.adk.agents import LlmAgent
+from google.adk.models.lite_llm import LiteLlm
+from ..utils.config import get_settings
 
 
 def create_discharge_processing_agent() -> LlmAgent:
     """Create and configure the discharge summary processing agent"""
+    
+    settings = get_settings()
     
     instruction = """
     You are a discharge summary processing agent specialized in extracting structured data from hospital discharge summaries.
@@ -55,8 +59,10 @@ def create_discharge_processing_agent() -> LlmAgent:
         name="DischargeProcessingAgent",
         description="Extracts structured data from hospital discharge summaries",
         instruction=instruction,
-        model="gemini-2.0-flash-exp",
+        model=LiteLlm(f"ollama/{settings.ollama_model}"),
         output_key="discharge_data"
     )
+    
+    return discharge_agent
     
     return discharge_agent

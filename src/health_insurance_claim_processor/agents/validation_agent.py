@@ -1,10 +1,14 @@
 """Validation Agent for checking data consistency and completeness"""
 
 from google.adk.agents import LlmAgent
+from google.adk.models.lite_llm import LiteLlm
+from ..utils.config import get_settings
 
 
 def create_validation_agent() -> LlmAgent:
     """Create and configure the validation agent"""
+    
+    settings = get_settings()
     
     instruction = """
     You are a validation agent specialized in checking the consistency and completeness of medical insurance claim data.
@@ -62,8 +66,10 @@ def create_validation_agent() -> LlmAgent:
         name="ValidationAgent",
         description="Validates data consistency and completeness across all processed documents",
         instruction=instruction,
-        model="gemini-2.0-flash-exp",
+        model=LiteLlm(f"ollama/{settings.ollama_model}"),
         output_key="validation_results"
     )
+    
+    return validation_agent
     
     return validation_agent
