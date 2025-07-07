@@ -30,18 +30,43 @@ async def lifespan(app: FastAPI):
     global claim_service
     
     # Startup
-    logger.info("Starting Health Insurance Claim Processor application")
+    logger.info("🚀 Starting Health Insurance Claim Processor application")
+    logger.info("=" * 60)
+    logger.info("🏥 HEALTH INSURANCE CLAIM PROCESSOR")
+    logger.info("=" * 60)
+    
     try:
+        logger.info("🔧 Initializing claim processing service...")
         claim_service = ClaimProcessingService()
-        logger.info("Claim processing service initialized successfully")
+        logger.info("✅ Claim processing service initialized successfully")
+        
+        # Log configuration
+        settings = get_settings()
+        logger.info("📋 Application Configuration:")
+        logger.info(f"   📱 App Name: {settings.app_name}")
+        logger.info(f"   🔢 Version: {settings.app_version}")
+        logger.info(f"   🌐 Host: {settings.host}:{settings.port}")
+        logger.info(f"   🐛 Debug Mode: {settings.debug}")
+        logger.info(f"   📊 Log Level: {settings.log_level}")
+        logger.info(f"   🤖 Ollama Model: {settings.ollama_model}")
+        logger.info(f"   📁 Max File Size: {settings.max_file_size} bytes")
+        logger.info(f"   📄 Allowed Extensions: {settings.allowed_extensions}")
+        
+        logger.info("🎉 Application startup completed successfully!")
+        logger.info("=" * 60)
+        
     except Exception as e:
-        logger.error(f"Failed to initialize claim processing service: {e}")
+        logger.error(f"❌ Failed to initialize claim processing service: {e}")
+        logger.exception("Full startup traceback:")
         raise
     
     yield
     
     # Shutdown
-    logger.info("Shutting down Health Insurance Claim Processor application")
+    logger.info("=" * 60)
+    logger.info("🛑 Shutting down Health Insurance Claim Processor application")
+    logger.info("👋 Goodbye!")
+    logger.info("=" * 60)
 
 
 def create_app() -> FastAPI:
@@ -132,20 +157,67 @@ async def process_claim(
     - Maximum size: 10MB per file
     - Multiple files supported
     """
+    request_start = datetime.utcnow()
+    request_id = None
+    
     try:
-        logger.info(f"Processing claim with {len(files)} files: {[f.filename for f in files]}")
+        logger.info("=" * 80)
+        logger.info("🏥 NEW CLAIM PROCESSING REQUEST")
+        logger.info("=" * 80)
+        logger.info(f"📁 Received {len(files)} files: {[f.filename for f in files]}")
+        logger.info(f"⏰ Request started at: {request_start.isoformat()}")
+        
+        # Log file details
+        for i, file in enumerate(files, 1):
+            logger.info(f"📄 File {i}: {file.filename}")
+            logger.info(f"   📦 Content Type: {file.content_type}")
+            if hasattr(file, 'size') and file.size:
+                logger.info(f"   📏 Size: {file.size} bytes")
+        
+        logger.info("🚀 Starting claim processing...")
         
         # Process the claim
         result = await service.process_claim(files)
+        request_id = result.request_id
         
-        logger.info(f"Successfully processed claim {result.request_id}")
+        # Log successful completion
+        processing_duration = (datetime.utcnow() - request_start).total_seconds()
+        logger.info("=" * 80)
+        logger.info("🎉 CLAIM PROCESSING COMPLETED SUCCESSFULLY")
+        logger.info("=" * 80)
+        logger.info(f"🆔 Request ID: {request_id}")
+        logger.info(f"⏱️ Total Duration: {processing_duration:.2f} seconds")
+        logger.info(f"📊 Documents Processed: {len(result.documents)}")
+        logger.info(f"📋 Validation Score: {result.validation.validation_score}")
+        logger.info(f"🎯 Decision: {result.claim_decision.status.upper()}")
+        logger.info(f"💭 Reason: {result.claim_decision.reason}")
+        logger.info("=" * 80)
+        
         return result
         
-    except HTTPException:
+    except HTTPException as http_exc:
         # Re-raise HTTP exceptions as-is
+        processing_duration = (datetime.utcnow() - request_start).total_seconds()
+        logger.error("=" * 80)
+        logger.error("❌ CLAIM PROCESSING FAILED (HTTP ERROR)")
+        logger.error("=" * 80)
+        logger.error(f"🆔 Request ID: {request_id or 'Unknown'}")
+        logger.error(f"⏱️ Duration: {processing_duration:.2f} seconds")
+        logger.error(f"🚨 HTTP Error: {http_exc.status_code} - {http_exc.detail}")
+        logger.error("=" * 80)
         raise
+        
     except Exception as e:
-        logger.error(f"Unexpected error processing claim: {e}")
+        processing_duration = (datetime.utcnow() - request_start).total_seconds()
+        logger.error("=" * 80)
+        logger.error("❌ CLAIM PROCESSING FAILED (UNEXPECTED ERROR)")
+        logger.error("=" * 80)
+        logger.error(f"🆔 Request ID: {request_id or 'Unknown'}")
+        logger.error(f"⏱️ Duration: {processing_duration:.2f} seconds")
+        logger.error(f"🚨 Error: {str(e)}")
+        logger.exception("Full traceback:")
+        logger.error("=" * 80)
+        
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
