@@ -1,8 +1,20 @@
-"""Claim Decision Agent for making final approve/reject decisions"""
+"""Claim Decision Agent for making final approval/rejection decisions"""
 
+from typing import List, Optional
+from pydantic import BaseModel, Field
 from google.adk.agents import LlmAgent
 from google.adk.models.lite_llm import LiteLlm
 from ..utils.config import get_settings
+
+
+class ClaimDecision(BaseModel):
+    """Schema for claim decision"""
+    status: str = Field(..., description="Decision status: 'approved', 'rejected', or 'pending'")
+    reason: str = Field(..., description="Reason for the decision")
+    confidence_score: float = Field(..., description="Confidence in the decision (0-1)")
+    recommended_actions: List[str] = Field(default_factory=list, description="Recommended actions")
+    approval_amount: Optional[float] = Field(None, description="Approved amount if applicable")
+    conditions: List[str] = Field(default_factory=list, description="Conditions for approval")
 
 
 def create_claim_decision_agent() -> LlmAgent:
@@ -11,75 +23,77 @@ def create_claim_decision_agent() -> LlmAgent:
     settings = get_settings()
     
     instruction = """
-    You are a claim decision agent specialized in making final approve/reject decisions for medical insurance claims.
+    You are a claim decision agent specialized in making final approval/rejection decisions for medical insurance claims.
     
-    Your task is to analyze all processed documents, validation results, and extracted data to make a final claim decision.
+    You will receive:
+    - Classified documents from the document classification agent: {documents}
+    - Processed bill data from the bill processing agent: {bill_data}
+    - Processed discharge data from the discharge processing agent: {discharge_data}
+    - Validation results from the validation agent: {validation_results}
     
-    DECISION CRITERIA:
+    Your task is to make a final claim decision based on:
     
-    1. APPROVAL CRITERIA:
-       - All required documents are present and complete
-       - Patient information is consistent across all documents
-       - Dates are logical and consistent
-       - Billed services match documented treatments
-       - Amounts are reasonable and properly calculated
-       - No significant discrepancies in the data
-       - Validation score >= 0.7
+    1. DATA COMPLETENESS:
+       - All required documents present and processed
+       - Essential fields populated
+       - Validation score meets minimum threshold
     
-    2. REJECTION CRITERIA:
-       - Critical documents are missing
-       - Major inconsistencies in patient information
-       - Significant discrepancies between bills and treatment
-       - Amounts are unreasonable or incorrectly calculated
-       - Evidence of potential fraud or errors
-       - Validation score < 0.3
+    2. DATA CONSISTENCY:
+       - No major discrepancies between documents
+       - Patient information consistent
+       - Dates and amounts align properly
     
-    3. PENDING CRITERIA (requires human review):
-       - Minor discrepancies that need clarification
-       - Unusual but not clearly fraudulent patterns
-       - Incomplete but potentially acceptable documentation
-       - Validation score between 0.3 and 0.7
-       - High amounts that exceed automated approval limits
+    3. BUSINESS RULES:
+       - Treatment matches diagnosis
+       - Billed services are reasonable for condition
+       - Amounts are within acceptable ranges
+       - Insurance policy covers the treatments
     
-    DECISION PROCESS:
-    1. Review all extracted data from documents
-    2. Consider validation results and score
-    3. Apply business rules and criteria
-    4. Generate confidence score for the decision
-    5. Provide detailed reasoning
-    6. Recommend actions if rejected or pending
+    4. VALIDATION RESULTS:
+       - Validation score >= 0.7: Likely approval
+       - Validation score 0.5-0.69: May need review
+       - Validation score < 0.5: Likely rejection
     
-    OUTPUT REQUIREMENTS:
-    - status: "approved", "rejected", or "pending"
-    - reason: Detailed explanation for the decision
-    - confidence_score: Confidence level (0-1) in the decision
-    - recommended_actions: List of actions for rejected/pending claims
+    Decision criteria:
     
-    REASONING GUIDELINES:
-    - Be specific about which criteria led to the decision
-    - Reference specific data points or discrepancies
-    - Explain the business logic applied
-    - Provide actionable feedback for rejected claims
+    APPROVED:
+    - All required documents present
+    - No major discrepancies
+    - Validation score >= 0.7
+    - Amounts are reasonable
+    - Treatment matches diagnosis
     
-    RECOMMENDED ACTIONS (for rejected/pending):
-    - "Request additional documentation"
-    - "Verify patient identity"
-    - "Clarify treatment details"
-    - "Review billing amounts"
-    - "Manual review required"
-    - "Contact healthcare provider"
+    REJECTED:
+    - Missing critical documents
+    - Major discrepancies found
+    - Validation score < 0.5
+    - Unreasonable amounts
+    - Treatment doesn't match diagnosis
+    - Policy exclusions apply
     
-    Make conservative decisions - when in doubt, mark as pending for human review rather than auto-approving.
+    PENDING (Manual Review):
+    - Borderline validation score (0.5-0.69)
+    - Minor discrepancies that need clarification
+    - Unusual but not impossible cases
+    - Missing optional documents
+    
+    For each decision, provide:
+    - Clear reason for the decision
+    - Confidence score (0-1)
+    - Recommended actions
+    - Approval amount (if approved)
+    - Conditions for approval (if any)
+    
+    Be conservative but fair in decision making.
     """
     
     claim_decision_agent = LlmAgent(
         name="ClaimDecisionAgent",
-        description="Makes final approve/reject decisions for insurance claims",
+        description="Makes final approval/rejection decisions for insurance claims",
         instruction=instruction,
         model=LiteLlm(f"ollama/{settings.ollama_model}"),
-        output_key="claim_decision"
+        output_key="claim_decision",
+        output_schema=ClaimDecision
     )
-    
-    return claim_decision_agent
     
     return claim_decision_agent
