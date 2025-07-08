@@ -1,5 +1,6 @@
 """Claim processing service that orchestrates the AI agents"""
 
+import os
 import uuid
 import time
 from datetime import datetime
@@ -14,14 +15,12 @@ from ..agents.HealthInsuranceClaimProcessorAgent.workflow_agent import create_he
 from ..models.response import ClaimProcessResponse, DocumentData, ValidationResult, ClaimDecision
 from ..services.pdf_processor import PDFProcessor
 from ..utils.logger import logger
-from ..utils.config import get_settings
 
 
 class ClaimProcessingService:
     """Service for processing insurance claims using AI agents"""
     
     def __init__(self):
-        self.settings = get_settings()
         self.pdf_processor = PDFProcessor()
         self.session_service = InMemorySessionService()
         
@@ -276,7 +275,11 @@ class ClaimProcessingService:
                 validation_score=0.8  # Default for now
             )
         
-        return ValidationResult()
+        return ValidationResult(
+            missing_documents=[],
+            discrepancies=[],
+            validation_score=0.8  # Default for now
+        )
     
     def _parse_claim_decision(self, session_state: Dict[str, Any], final_response: Any) -> ClaimDecision:
         """Parse claim decision from agent output"""
@@ -287,12 +290,14 @@ class ClaimProcessingService:
             return ClaimDecision(
                 status="approved",  # Default for now
                 reason="Processed successfully",
-                confidence_score=0.8
+                confidence_score=0.8,
+                recommended_actions=["Process claim for payment"]
             )
         
         # Fallback decision
         return ClaimDecision(
             status="pending",
             reason="Manual review required",
-            confidence_score=0.5
+            confidence_score=0.5,
+            recommended_actions=["Manual review by claim specialist required"]
         )

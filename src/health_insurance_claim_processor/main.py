@@ -37,11 +37,16 @@ async def lifespan(app: FastAPI):
     
     try:
         logger.info("🔧 Initializing claim processing service...")
+        
+        # Set environment variables for agents to use
+        settings = get_settings()
+        os.environ["OLLAMA_MODEL"] = settings.ollama_model
+        logger.info(f"🔧 Set OLLAMA_MODEL environment variable: {settings.ollama_model}")
+        
         claim_service = ClaimProcessingService()
         logger.info("✅ Claim processing service initialized successfully")
         
         # Log configuration
-        settings = get_settings()
         logger.info("📋 Application Configuration:")
         logger.info(f"   📱 App Name: {settings.app_name}")
         logger.info(f"   🔢 Version: {settings.app_version}")
