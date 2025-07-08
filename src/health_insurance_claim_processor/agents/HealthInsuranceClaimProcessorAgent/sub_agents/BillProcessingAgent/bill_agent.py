@@ -90,7 +90,12 @@ def create_bill_processing_agent() -> LlmAgent:
             name="BillProcessingAgent",
             description="Extracts structured data from medical bills and invoices",
             instruction=instruction,
-            model=LiteLlm(f"ollama/{ollama_model}"),
+            model=LiteLlm(
+                model=f"ollama/{ollama_model}",
+                timeout=600,  # 10 minutes timeout
+                request_timeout=600,
+                api_timeout=600
+            ),
             output_key="bill_data",
             output_schema=BillProcessingResult
         )

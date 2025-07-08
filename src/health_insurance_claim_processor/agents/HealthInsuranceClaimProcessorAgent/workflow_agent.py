@@ -6,6 +6,7 @@ from google.adk.agents import SequentialAgent, ParallelAgent
 from .sub_agents.DocumentAgent.document_agent import create_document_classification_agent
 from .sub_agents.BillProcessingAgent.bill_agent import create_bill_processing_agent
 from .sub_agents.DischargeProcessingAgent.discharge_agent import create_discharge_processing_agent
+from .sub_agents.ClaimDataAgent.claim_data_agent import create_claim_data_agent
 from .sub_agents.ValidationAgent.validation_agent import create_validation_agent
 from .sub_agents.ClaimDecisionAgent.claim_decision_agent import create_claim_decision_agent
 
@@ -33,6 +34,10 @@ def create_health_insurance_claim_processor_agent() -> SequentialAgent:
         discharge_processing_agent = create_discharge_processing_agent()
         logger.info(f"✅ Discharge Processing Agent created: {discharge_processing_agent.name}")
         
+        logger.debug("📋 Creating Claim Data Processing Agent...")
+        claim_data_agent = create_claim_data_agent()
+        logger.info(f"✅ Claim Data Processing Agent created: {claim_data_agent.name}")
+        
         logger.debug("✅ Creating Validation Agent...")
         validation_agent = create_validation_agent()
         logger.info(f"✅ Validation Agent created: {validation_agent.name}")
@@ -46,7 +51,7 @@ def create_health_insurance_claim_processor_agent() -> SequentialAgent:
         parallel_process_agent = ParallelAgent(
             name="ParallelDocumentProcessingAgent",
             description="Processes different document types in parallel using specialized agents",
-            sub_agents=[bill_processing_agent, discharge_processing_agent]
+            sub_agents=[bill_processing_agent, discharge_processing_agent, claim_data_agent]
         )
         logger.info(f"✅ Parallel Processing Agent created with {len(parallel_process_agent.sub_agents)} sub-agents")
         

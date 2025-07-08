@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     
     # Agent Configuration
     max_parallel_agents: int = 4
-    agent_timeout: int = 300
+    agent_timeout: int = 900  # Increased to 15 minutes for complex parallel processing
 
 
 @lru_cache()

@@ -2,7 +2,7 @@
 
 import os
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 from pydantic import BaseModel, Field
 from google.adk.agents import LlmAgent
 from google.adk.models.lite_llm import LiteLlm
@@ -13,12 +13,11 @@ logger.setLevel(logging.DEBUG)
 
 
 class DocumentData(BaseModel):
-    """Schema for individual document data"""
-    type: str = Field(..., description="Document type")
+    """Schema for individual document data after classification"""
+    type: str = Field(..., description="Document type classification")
     content: str = Field(..., description="Full text content of the document")
     filename: Optional[str] = Field(None, description="Original filename if available")
     confidence: float = Field(..., description="Confidence score for classification (0-1)")
-    extracted_fields: Dict[str, Any] = Field(default_factory=dict, description="Key fields extracted based on document type")
 
 
 class DocumentClassificationSummary(BaseModel):
@@ -46,7 +45,7 @@ def create_document_classification_agent() -> LlmAgent:
         You are a document classification and separation agent specialized in processing medical insurance documents.
         
         You will receive pre-extracted text content from multiple PDF files that have already been processed 
-        by a PDF text extraction service. Your task is to:
+        by a PDF text extraction service. Your ONLY task is to:
         
         1. ANALYZE all the extracted text content from the files
         2. SEPARATE different document types that might be mixed together
@@ -60,9 +59,8 @@ def create_document_classification_agent() -> LlmAgent:
            - "other": Documents that don't fit the above categories
         
         4. GROUP documents of the same type together
-        5. EXTRACT key information for each document type
         
-        Analysis criteria:
+        Classification criteria:
         - Bills: Look for amounts, itemized charges, hospital/clinic letterhead, invoice numbers, billing dates
         - Discharge summaries: Look for admission/discharge dates, diagnosis, treatment details, doctor signatures
         - ID cards: Look for member ID, policy numbers, insurance company logos, coverage details
@@ -70,14 +68,15 @@ def create_document_classification_agent() -> LlmAgent:
         - Prescriptions: Look for medication names, dosages, doctor prescriptions
         - Lab reports: Look for test results, reference ranges, laboratory letterhead
         
-        For each document, extract relevant information based on its type:
-        - Bills: hospital_name, total_amount, date_of_service, patient_name, bill_number
-        - Discharge summaries: patient_name, diagnosis, admission_date, discharge_date, doctor_name
-        - Others: Extract relevant fields based on document type
+        IMPORTANT: 
+        - DO NOT extract detailed information from documents - only classify them
+        - Focus on accurate document type identification with high confidence scores
+        - If unsure about classification, use "other" category
+        - Each document should have content and classification only
         
-        Return a structured JSON with all documents classified, separated, and grouped by type.
+        Return a structured JSON with all documents classified and grouped by type, but WITHOUT detailed field extraction.
         
-        Note: The text has already been extracted from PDF files using PyPDF. Focus on classification and data extraction.
+        Note: The text has already been extracted from PDF files using PyPDF. Focus ONLY on classification.
         """
         
         logger.debug("🤖 Creating LlmAgent for Document Classification...")
@@ -85,7 +84,12 @@ def create_document_classification_agent() -> LlmAgent:
             name="DocumentAgent",
             description="Classifies, separates, and groups medical documents from extracted text",
             instruction=instruction,
-            model=LiteLlm(f"ollama/{ollama_model}"),
+            model=LiteLlm(
+                model=f"ollama/{ollama_model}",
+                timeout=600,  # 10 minutes timeout
+                request_timeout=600,
+                api_timeout=600
+            ),
             output_key="documents",
             output_schema=DocumentClassificationResult
         )

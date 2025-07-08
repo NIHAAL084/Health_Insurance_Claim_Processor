@@ -93,7 +93,12 @@ def create_discharge_processing_agent() -> LlmAgent:
             name="DischargeProcessingAgent",
             description="Extracts structured data from hospital discharge summaries",
             instruction=instruction,
-            model=LiteLlm(f"ollama/{ollama_model}"),
+            model=LiteLlm(
+                model=f"ollama/{ollama_model}",
+                timeout=600,  # 10 minutes timeout
+                request_timeout=600,
+                api_timeout=600
+            ),
             output_key="discharge_data",
             output_schema=DischargeProcessingResult
         )

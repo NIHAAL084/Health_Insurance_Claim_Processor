@@ -34,9 +34,10 @@ def create_validation_agent() -> LlmAgent:
         You are a validation agent specialized in checking data consistency and completeness for medical insurance claims.
         
         You will receive:
-        - Classified documents from the document classification agent: {documents}
-        - Processed bill data from the bill processing agent: {bill_data}
-        - Processed discharge data from the discharge processing agent: {discharge_data}
+        - Classified documents from DocumentAgent: {documents}
+        - Processed bill data from BillAgent: {bill_data}
+        - Processed discharge data from DischargeAgent: {discharge_data}
+        - Processed claim data from ClaimDataAgent: {claim_data}
         
         Your task is to validate the data and identify:
         
@@ -85,7 +86,12 @@ def create_validation_agent() -> LlmAgent:
             name="ValidationAgent",
             description="Validates data consistency and completeness across processed documents",
             instruction=instruction,
-            model=LiteLlm(f"ollama/{ollama_model}"),
+            model=LiteLlm(
+                model=f"ollama/{ollama_model}",
+                timeout=600,  # 10 minutes timeout
+                request_timeout=600,
+                api_timeout=600
+            ),
             output_key="validation_results",
             output_schema=ValidationResult
         )

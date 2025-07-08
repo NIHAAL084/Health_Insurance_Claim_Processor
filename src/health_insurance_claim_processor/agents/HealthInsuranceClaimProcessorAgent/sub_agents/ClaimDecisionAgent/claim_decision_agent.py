@@ -2,7 +2,7 @@
 
 import os
 import logging
-from typing import List, Optional
+from typing import List, Optional, Literal
 from pydantic import BaseModel, Field
 from google.adk.agents import LlmAgent
 from google.adk.models.lite_llm import LiteLlm
@@ -14,7 +14,7 @@ logger.setLevel(logging.DEBUG)
 
 class ClaimDecision(BaseModel):
     """Schema for claim decision"""
-    status: str = Field(..., description="Decision status: 'approved', 'rejected', or 'pending'")
+    status: Literal["approved", "rejected", "pending"] = Field(..., description="Decision status")
     reason: str = Field(..., description="Reason for the decision")
     confidence_score: float = Field(..., description="Confidence in the decision (0-1)")
     recommended_actions: List[str] = Field(default_factory=list, description="Recommended actions")
@@ -35,10 +35,11 @@ def create_claim_decision_agent() -> LlmAgent:
         You are a claim decision agent specialized in making final approval/rejection decisions for medical insurance claims.
         
         You will receive:
-        - Classified documents from the document classification agent: {documents}
-        - Processed bill data from the bill processing agent: {bill_data}
-        - Processed discharge data from the discharge processing agent: {discharge_data}
-        - Validation results from the validation agent: {validation_results}
+        - Classified documents from DocumentAgent: {documents}
+        - Processed bill data from BillAgent: {bill_data}
+        - Processed discharge data from DischargeAgent: {discharge_data}
+        - Processed claim data from ClaimDataAgent: {claim_data}
+        - Validation results from ValidationAgent: {validation_results}
         
         Your task is to make a final claim decision based on:
         
@@ -101,7 +102,12 @@ def create_claim_decision_agent() -> LlmAgent:
             name="ClaimDecisionAgent",
             description="Makes final approval/rejection decisions for insurance claims",
             instruction=instruction,
-            model=LiteLlm(f"ollama/{ollama_model}"),
+            model=LiteLlm(
+                model=f"ollama/{ollama_model}",
+                timeout=600,  # 10 minutes timeout
+                request_timeout=600,
+                api_timeout=600
+            ),
             output_key="claim_decision",
             output_schema=ClaimDecision
         )
