@@ -9,10 +9,10 @@ from typing import List, Dict, Any
 from google.adk.runners import Runner
 from google.adk.sessions.in_memory_session_service import InMemorySessionService
 from google.genai.types import Content, Part
-from fastapi import UploadFile, HTTPException
+from fastapi import UploadFile
 
 from ..agents.HealthInsuranceClaimProcessorAgent.workflow_agent import create_health_insurance_claim_processor_agent
-from ..models.response import ClaimProcessResponse, DocumentData, ValidationResult, ClaimDecision
+ # Removed unused response models
 from ..services.pdf_processor import PDFProcessor
 from ..utils.logger import logger
 from ..utils.config import get_settings
@@ -36,8 +36,8 @@ class ClaimProcessingService:
             session_service=self.session_service
         )
     
-    async def process_claim(self, files: List[UploadFile]) -> ClaimProcessResponse:
-        """Process insurance claim documents through AI agent workflow"""
+    async def process_claim(self, files: List[UploadFile]) -> dict[str, Any]:
+        """Process insurance claim documents through AI agent workflow and return JSON string or dict"""
         request_id = str(uuid.uuid4())
         start_time = time.time()
         
@@ -56,7 +56,6 @@ class ClaimProcessingService:
             # Create final response with all agent outputs
             processing_time = time.time() - start_time
             response = self._create_final_response(request_id, session_state, processing_time)
-            
             logger.info(f"✅ Completed claim processing {request_id} in {processing_time:.2f}s")
             return response
             
@@ -124,11 +123,9 @@ class ClaimProcessingService:
         
         return content
     
-    def _create_final_response(self, request_id: str, session_state: Dict[str, Any], processing_time: float) -> ClaimProcessResponse:
-        """Create final response with comprehensive agent outputs"""
+    def _create_final_response(self, request_id: str, session_state: Dict[str, Any], processing_time: float) -> dict[str, Any]:
+        """Return the final_report as a dict with all agent outputs, no extra/empty fields"""
         timestamp = datetime.now(timezone.utc)
-        
-        # Create comprehensive final report with all agent outputs
         final_report = {
             "request_id": request_id,
             "processing_time": processing_time,
@@ -136,72 +133,27 @@ class ClaimProcessingService:
             "workflow_status": "completed" if session_state else "no_outputs",
             "agent_outputs": {
                 "documents": session_state.get("documents"),
-                "bill_data": session_state.get("bill_data"), 
+                "bill_data": session_state.get("bill_data"),
                 "discharge_data": session_state.get("discharge_data"),
                 "claim_data": session_state.get("claim_data"),
                 "validation_results": session_state.get("validation_results"),
                 "claim_decision": session_state.get("claim_decision")
             },
-            "raw_session_state": session_state  # Complete session state for debugging
+            "raw_session_state": session_state
         }
-        
-        # Return simplified response - all data is in the final_report
-        return ClaimProcessResponse(
-            request_id=request_id,
-            processing_time=processing_time,
-            timestamp=timestamp,
-            documents=[DocumentData(
-                type="final_report",
-                content="Complete insurance claim processing results",
-                hospital_name=None,
-                patient_name=None,
-                date_of_service=None,
-                total_amount=None,
-                insurance_amount=None,
-                patient_amount=None,
-                bill_number=None,
-                diagnosis=None,
-                admission_date=None,
-                discharge_date=None,
-                treatment_summary=None,
-                doctor_name=None,
-                policy_number=None,
-                member_id=None,
-                insurance_company=None,
-                coverage_type=None,
-                extracted_data=final_report  # All agent outputs are here
-            )],
-            validation=ValidationResult(
-                missing_documents=[],
-                discrepancies=[],
-                validation_score=1.0 if session_state else 0.0
-            ),
-            claim_decision=ClaimDecision(
-                status="pending",  # Use valid status
-                reason="Check final_report for detailed agent outputs",
-                confidence_score=1.0 if session_state else 0.0,
-                recommended_actions=["Review final_report.extracted_data.agent_outputs"]
-            )
-        )
+        return final_report
     
-    def _create_error_response(self, request_id: str, processing_time: float, error: str) -> ClaimProcessResponse:
-        """Create error response"""
+    def _create_error_response(self, request_id: str, processing_time: float, error: str) -> dict[str, Any]:
+        """Create error response as a dict matching the new output style"""
         timestamp = datetime.now(timezone.utc)
-        
-        return ClaimProcessResponse(
-            request_id=request_id,
-            processing_time=processing_time,
-            timestamp=timestamp,
-            documents=[],
-            validation=ValidationResult(
-                missing_documents=["Processing failed"],
-                discrepancies=[f"Error: {error}"],
-                validation_score=0.0
-            ),
-            claim_decision=ClaimDecision(
-                status="rejected",  # Use valid status for errors
-                reason=f"Processing failed: {error}",
-                confidence_score=0.0,
-                recommended_actions=["Contact support" if "timeout" in error else "Retry processing"]
-            )
-        )
+        error_report = {
+            "request_id": request_id,
+            "processing_time": processing_time,
+            "timestamp": timestamp.isoformat(),
+            "workflow_status": "error",
+            "error": str(error),
+            "agent_outputs": None,
+            "raw_session_state": None,
+            "recommended_actions": ["Contact support" if "timeout" in error else "Retry processing"]
+        }
+        return error_report

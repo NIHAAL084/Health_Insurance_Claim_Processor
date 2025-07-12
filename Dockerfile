@@ -15,21 +15,28 @@ RUN apt-get update && apt-get install -y \
 # Install uv
 RUN pip install uv
 
+
 # Copy project files
-COPY pyproject.toml .
-COPY .env.example .env
+COPY pyproject.toml ./
+COPY .env ./
+COPY .env.debug ./
+COPY uv.lock ./
 
 # Install dependencies
 RUN uv sync --no-dev
 
-# Copy source code
-COPY src/ src/
+# Copy source code and all relevant directories
+COPY agents/ agents/
+COPY services/ services/
+COPY utils/ utils/
+COPY main.py ./
 COPY tests/ tests/
 
 # Create non-root user
 RUN adduser --disabled-password --gecos "" appuser && \
     chown -R appuser:appuser /app
 USER appuser
+
 
 # Expose port
 EXPOSE 8000
@@ -38,5 +45,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
+
 # Run the application
-CMD ["uv", "run", "python", "-m", "health_insurance_claim_processor.main"]
+CMD ["uv", "run", "fastapi", "dev", "main.py"]

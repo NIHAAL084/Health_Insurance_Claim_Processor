@@ -4,7 +4,7 @@ import os
 import sys
 from contextlib import asynccontextmanager
 from typing import List
-from datetime import datetime
+from datetime import datetime, timezone
 
 import uvicorn
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 # Add the src directory to Python path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from health_insurance_claim_processor.models.response import ClaimProcessResponse, ErrorResponse
+ # Removed ErrorResponse import
 from health_insurance_claim_processor.services.claim_processor import ClaimProcessingService
 from health_insurance_claim_processor.utils.config import get_settings
 from health_insurance_claim_processor.utils.logger import logger
@@ -130,7 +130,6 @@ async def health_check():
 
 @app.post(
     "/process-claim",
-    response_model=ClaimProcessResponse,
     tags=["Claim Processing"],
     summary="Process Insurance Claim Documents",
     description="Upload multiple PDF documents (bills, discharge summaries, etc.) to process an insurance claim"
@@ -138,7 +137,7 @@ async def health_check():
 async def process_claim(
     files: List[UploadFile] = File(..., description="PDF files to process"),
     service: ClaimProcessingService = Depends(get_claim_service)
-) -> ClaimProcessResponse:
+) -> dict[str, Any]:
     """
     Process medical insurance claim documents.
     
@@ -183,21 +182,10 @@ async def process_claim(
         
         # Process the claim
         result = await service.process_claim(files)
-        request_id = result.request_id
-        
-        # Log successful completion
-        processing_duration = (datetime.utcnow() - request_start).total_seconds()
         logger.info("=" * 80)
         logger.info("🎉 CLAIM PROCESSING COMPLETED SUCCESSFULLY")
         logger.info("=" * 80)
-        logger.info(f"🆔 Request ID: {request_id}")
-        logger.info(f"⏱️ Total Duration: {processing_duration:.2f} seconds")
-        logger.info(f"📊 Documents Processed: {len(result.documents)}")
-        logger.info(f"📋 Validation Score: {result.validation.validation_score}")
-        logger.info(f"🎯 Decision: {result.claim_decision.status.upper()}")
-        logger.info(f"💭 Reason: {result.claim_decision.reason}")
-        logger.info("=" * 80)
-        
+        # Optionally, parse and log request_id, duration, etc. from result if needed
         return result
         
     except HTTPException as http_exc:
@@ -226,32 +214,36 @@ async def process_claim(
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
+from fastapi import Request
+
 @app.exception_handler(HTTPException)
-async def http_exception_handler(request, exc: HTTPException):
+async def http_exception_handler(request: Request, exc: HTTPException):
     """Handle HTTP exceptions"""
-    error_response = ErrorResponse(
-        error=exc.__class__.__name__,
-        message=exc.detail,
-        timestamp=datetime.utcnow()
-    )
+    error_response = {
+        "request_id": getattr(request.state, 'request_id', 'unknown'),
+        "error": exc.__class__.__name__,
+        "message": exc.detail,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
     return JSONResponse(
         status_code=exc.status_code,
-        content=error_response.model_dump()
+        content=error_response
     )
 
 
 @app.exception_handler(Exception)
-async def general_exception_handler(request, exc: Exception):
+async def general_exception_handler(request: Request, exc: Exception):
     """Handle general exceptions"""
     logger.error(f"Unhandled exception: {exc}")
-    error_response = ErrorResponse(
-        error=exc.__class__.__name__,
-        message="Internal server error",
-        timestamp=datetime.utcnow()
-    )
+    error_response = {
+        "request_id": getattr(request.state, 'request_id', 'unknown'),
+        "error": exc.__class__.__name__,
+        "message": "Internal server error",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
     return JSONResponse(
         status_code=500,
-        content=error_response.model_dump()
+        content=error_response
     )
 
 
