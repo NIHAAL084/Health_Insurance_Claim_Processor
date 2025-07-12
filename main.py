@@ -11,13 +11,10 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-# Add the src directory to Python path for imports
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
- # Removed ErrorResponse import
-from health_insurance_claim_processor.services.claim_processor import ClaimProcessingService
-from health_insurance_claim_processor.utils.config import get_settings
-from health_insurance_claim_processor.utils.logger import logger
+# Import from new root-level structure
+from services.claim_processor import ClaimProcessingService
+from utils.config import get_settings
+from utils.logger import logger
 
 
 # Global service instance
@@ -251,8 +248,9 @@ def main():
     """Main entry point for running the application"""
     settings = get_settings()
     
+
     uvicorn.run(
-        "health_insurance_claim_processor.main:app",
+        "main:app",
         host=settings.host,
         port=settings.port,
         reload=settings.debug,
