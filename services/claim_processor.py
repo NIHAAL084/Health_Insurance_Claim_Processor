@@ -11,11 +11,11 @@ from google.adk.sessions.in_memory_session_service import InMemorySessionService
 from google.genai.types import Content, Part
 from fastapi import UploadFile
 
-from ..agents.HealthInsuranceClaimProcessorAgent.workflow_agent import create_health_insurance_claim_processor_agent
+from agents.HealthInsuranceClaimProcessorAgent.workflow_agent import create_health_insurance_claim_processor_agent
  # Removed unused response models
-from ..services.pdf_processor import PDFProcessor
-from ..utils.logger import logger
-from ..utils.config import get_settings
+from services.pdf_processor import PDFProcessor
+from utils.logger import logger
+from utils.config import get_settings
 
 
 class ClaimProcessingService:

@@ -8,8 +8,8 @@ from pathlib import Path
 import pypdf
 from fastapi import UploadFile, HTTPException
 
-from ..utils.logger import logger
-from ..utils.config import get_settings
+from utils.logger import logger
+from utils.config import get_settings
 
 # Set up module-level logger
 module_logger = logging.getLogger(__name__)
