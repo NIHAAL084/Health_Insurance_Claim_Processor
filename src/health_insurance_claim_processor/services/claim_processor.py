@@ -84,7 +84,7 @@ class ClaimProcessingService:
         # Prepare agent input
         content = Content(
             role="user",
-            parts=[Part.from_text(self._format_input_text(request_id, processed_files))]
+            parts=[Part.from_text(text=self._format_input_text(request_id, processed_files))]
         )
         
         # Run workflow and wait for completion
