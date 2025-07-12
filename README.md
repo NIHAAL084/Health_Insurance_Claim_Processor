@@ -365,3 +365,8 @@ See `utils/config.py` for all options.
 ## License
 
 MIT License
+
+## Maintainer
+
+Nihaal Anupoju  
+<nihaal.a084@gmail.com>
