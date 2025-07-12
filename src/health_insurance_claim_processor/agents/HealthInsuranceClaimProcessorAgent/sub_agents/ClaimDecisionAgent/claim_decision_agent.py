@@ -58,11 +58,14 @@ def create_claim_decision_agent() -> LlmAgent:
            - Billed services are reasonable for condition
            - Amounts are within acceptable ranges
            - Insurance policy covers the treatments
+           - Medications are properly distinguished from procedures
+           - Each agent processed only appropriate document types
         
         4. VALIDATION RESULTS:
            - Validation score >= 0.7: Likely approval
            - Validation score 0.5-0.69: May need review
            - Validation score < 0.5: Likely rejection
+           - Agent compliance issues may lower score
         
         Decision criteria:
         
@@ -72,6 +75,7 @@ def create_claim_decision_agent() -> LlmAgent:
         - Validation score >= 0.7
         - Amounts are reasonable
         - Treatment matches diagnosis
+        - Proper medication vs procedure classification
         
         REJECTED:
         - Missing critical documents
@@ -80,12 +84,14 @@ def create_claim_decision_agent() -> LlmAgent:
         - Unreasonable amounts
         - Treatment doesn't match diagnosis
         - Policy exclusions apply
+        - Significant medication/procedure misclassification
         
         PENDING (Manual Review):
         - Borderline validation score (0.5-0.69)
         - Minor discrepancies that need clarification
         - Unusual but not impossible cases
         - Missing optional documents
+        - Minor classification issues that need review
         
         For each decision, provide:
         - Clear reason for the decision

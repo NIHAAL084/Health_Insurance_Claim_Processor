@@ -15,7 +15,7 @@ logger.setLevel(logging.DEBUG)
 class DocumentData(BaseModel):
     """Schema for individual document data after classification"""
     type: str = Field(..., description="Document type classification")
-    content: str = Field(..., description="Full text content of the document")
+    content: str = Field(..., description="Comprehensive summary preserving ALL key information including patient details, amounts, dates, doctors, procedures, medications, and identifiers")
     filename: Optional[str] = Field(None, description="Original filename if available")
     confidence: float = Field(..., description="Confidence score for classification (0-1)")
 
@@ -50,15 +50,20 @@ def create_document_classification_agent() -> LlmAgent:
         1. ANALYZE all the extracted text content from the files
         2. SEPARATE different document types that might be mixed together
         3. CLASSIFY each document into one of these categories:
-           - "bill": Medical bills, invoices, statements
-           - "discharge_summary": Hospital discharge summaries, treatment summaries
-           - "id_card": Insurance ID cards, membership cards
+           - "bill": Medical bills, invoices, statements with charges and amounts
+           - "discharge_summary": Hospital discharge summaries, treatment summaries with admission/discharge info
+           - "id_card": Insurance ID cards, membership cards with policy details
            - "correspondence": Letters, emails, claim correspondence
-           - "prescription": Prescription documents, medication lists
-           - "lab_report": Laboratory reports, test results
+           - "prescription": Prescription documents, medication lists from doctors
+           - "lab_report": Laboratory reports, test results with values
            - "other": Documents that don't fit the above categories
         
-        4. GROUP documents of the same type together
+        4. PRESERVE key information in content field - include ALL important details like:
+           - Patient names, IDs, policy numbers
+           - Amounts, charges, dates
+           - Doctor names, hospital names
+           - Medications, procedures, diagnoses
+           - Any reference numbers or important identifiers
         
         Classification criteria:
         - Bills: Look for amounts, itemized charges, hospital/clinic letterhead, invoice numbers, billing dates
@@ -68,15 +73,14 @@ def create_document_classification_agent() -> LlmAgent:
         - Prescriptions: Look for medication names, dosages, doctor prescriptions
         - Lab reports: Look for test results, reference ranges, laboratory letterhead
         
-        IMPORTANT: 
-        - DO NOT extract detailed information from documents - only classify them
+        CRITICAL REQUIREMENTS:
+        - The "content" field must contain a COMPREHENSIVE summary preserving ALL key information
+        - DO NOT truncate or abbreviate critical details
+        - Include patient info, amounts, dates, doctors, procedures, medications in full
         - Focus on accurate document type identification with high confidence scores
         - If unsure about classification, use "other" category
-        - Each document should have content and classification only
         
-        Return a structured JSON with all documents classified and grouped by type, but WITHOUT detailed field extraction.
-        
-        Note: The text has already been extracted from PDF files using PyPDF. Focus ONLY on classification.
+        Return a structured JSON with all documents classified, with COMPLETE content preservation.
         """
         
         logger.debug("🤖 Creating LlmAgent for Document Classification...")

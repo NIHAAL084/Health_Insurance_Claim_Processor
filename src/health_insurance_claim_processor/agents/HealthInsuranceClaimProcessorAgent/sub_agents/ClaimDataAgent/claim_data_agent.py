@@ -36,7 +36,7 @@ class ClaimData(BaseModel):
     
     # Prescription specific fields
     prescribing_doctor: Optional[str] = Field(None, description="Doctor who prescribed medication")
-    medications: Optional[List[str]] = Field(None, description="List of prescribed medications")
+    medications: Optional[List[str]] = Field(None, description="List of prescribed medications with dosages (drugs, pills, injections) - NOT procedures")
     pharmacy_name: Optional[str] = Field(None, description="Name of pharmacy")
     prescription_date: Optional[str] = Field(None, description="Date prescription was written")
     
@@ -69,40 +69,49 @@ def create_claim_data_agent() -> LlmAgent:
         You are a claim data processing agent specialized in extracting structured information from 
         insurance-related documents including ID cards, correspondence, prescriptions, lab reports, and other documents.
         
-        You will receive classified documents from DocumentAgent in the {documents} output. Focus ONLY on documents that are:
-        - ID cards (policy information, member details)
-        - Correspondence (letters, emails, claim communications)
-        - Prescriptions (medication lists, pharmacy documents)
-        - Lab reports (test results, laboratory documents)
-        - Other documents (any non-bill, non-discharge documents)
+        You will receive classified documents from DocumentAgent in the {documents} output. Your task is to:
         
-        Skip any documents that are bills or discharge summaries - those are handled by other agents.
+        1. FIRST, identify and process ONLY documents with types: "id_card", "correspondence", "prescription", "lab_report", "other"
+        2. IGNORE documents with types "bill" or "discharge_summary" - those are handled by other specialized agents
+        3. If NO relevant documents are found, return an empty list with total_documents_processed: 0
         
         For each relevant document, extract structured data based on its type:
         
-        For ID CARDS:
+        For ID CARDS (document_type == "id_card"):
         - Policy number, member ID, insurance company name
         - Coverage type, effective/expiration dates, group number
         - Patient/member name
         
-        For CORRESPONDENCE:
+        For CORRESPONDENCE (document_type == "correspondence"):
         - Date, reference numbers, sender/recipient
         - Subject, key content summary
         - Any claim-related information
         
-        For PRESCRIPTIONS:
-        - Prescribing doctor, list of medications
+        For PRESCRIPTIONS (document_type == "prescription"):
+        - Prescribing doctor, list of medications with dosages
         - Pharmacy name, prescription date
         - Patient name
+        - DO NOT include medical procedures - only medications
         
-        For LAB REPORTS:
+        For LAB REPORTS (document_type == "lab_report"):
         - Test date, laboratory name
-        - Test results, ordering physician
+        - Test results with values and reference ranges
+        - Ordering physician
         - Patient name
         
-        For OTHER documents:
+        For OTHER documents (document_type == "other"):
         - Extract any relevant patient, insurance, or claim information
         - Identify document purpose and key details
+        
+        DOCUMENT TYPE VALIDATION:
+        - ONLY process documents with the specified types listed above
+        - Bills and discharge summaries should be IGNORED by this agent
+        - Return empty results if no relevant documents are present
+        
+        MEDICATION vs PROCEDURE DISTINCTION:
+        - Medications: drugs, pills, injections, prescriptions
+        - Procedures: surgeries, treatments, therapies, consultations
+        - Keep these categories separate and accurate
         
         Return structured JSON with extracted data for each relevant document.
         Focus on accuracy and completeness. If information is not clearly present, leave the field as null.

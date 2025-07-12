@@ -14,6 +14,7 @@ logger.setLevel(logging.DEBUG)
 
 class BillData(BaseModel):
     """Schema for bill data extraction"""
+    document_type: str = Field(default="bill", description="Document type being processed")
     hospital_name: Optional[str] = Field(None, description="Name of the hospital, clinic, or medical facility")
     total_amount: Optional[float] = Field(None, description="Total amount billed (numeric value)")
     date_of_service: Optional[str] = Field(None, description="Date when medical services were provided (YYYY-MM-DD format)")
@@ -21,7 +22,7 @@ class BillData(BaseModel):
     bill_number: Optional[str] = Field(None, description="Invoice or bill number")
     insurance_amount: Optional[float] = Field(None, description="Amount covered by insurance")
     patient_amount: Optional[float] = Field(None, description="Amount patient needs to pay")
-    service_details: Optional[List[str]] = Field(None, description="List of services provided with individual costs")
+    service_details: Optional[List[str]] = Field(None, description="List of billed services with costs (procedures, consultations, room charges) - NOT medications")
     doctor_name: Optional[str] = Field(None, description="Name of treating physician")
     department: Optional[str] = Field(None, description="Hospital department (Emergency, Surgery, etc.)")
     insurance_claim_number: Optional[str] = Field(None, description="Insurance claim reference number")
@@ -49,10 +50,13 @@ def create_bill_processing_agent() -> LlmAgent:
         instruction = """
         You are a bill processing agent specialized in extracting structured data from medical bills and invoices.
         
-        You will receive classified documents from the document classification agent. Look for documents with type "bill" 
-        from the {documents} output and process them. The text content has already been extracted from PDF files.
+        You will receive classified documents from the document classification agent. Your task is to:
         
-        Your task is to analyze bill documents and extract the following information:
+        1. FIRST, identify and process ONLY documents with type "bill" from the {documents} input
+        2. IGNORE all other document types (discharge summaries, prescriptions, lab reports, etc.)
+        3. If NO bill documents are found, return an empty list with total_bills_processed: 0
+        
+        For valid bill documents, extract the following information:
         
         Required fields:
         - hospital_name: Name of the hospital, clinic, or medical facility
@@ -64,7 +68,7 @@ def create_bill_processing_agent() -> LlmAgent:
         Optional fields (extract if available):
         - insurance_amount: Amount covered by insurance
         - patient_amount: Amount patient needs to pay
-        - service_details: List of services provided with individual costs
+        - service_details: List of services provided with individual costs (procedures, consultations, room charges)
         - doctor_name: Name of treating physician
         - department: Hospital department (Emergency, Surgery, etc.)
         - insurance_claim_number: Insurance claim reference number
@@ -78,11 +82,15 @@ def create_bill_processing_agent() -> LlmAgent:
         3. Clean and normalize names (proper case)
         4. Validate that total_amount = insurance_amount + patient_amount (if both present)
         5. If multiple bills are in one document, separate them
+        6. Service details should include medical procedures, room charges, consultations - NOT medications
+        
+        DOCUMENT TYPE VALIDATION:
+        - ONLY process documents where document_type == "bill"
+        - Discharge summaries, prescriptions, lab reports should be IGNORED by this agent
+        - Return empty results if no bill documents are present
         
         Return structured JSON data with the extracted fields. If a field cannot be found, use null.
         Be accurate and conservative - if you're unsure about a value, mark it as null rather than guessing.
-        
-        Note: Text extraction from PDFs has already been completed. Focus on data extraction and structuring.
         """
         
         logger.debug("🤖 Creating LlmAgent for Bill Processing...")

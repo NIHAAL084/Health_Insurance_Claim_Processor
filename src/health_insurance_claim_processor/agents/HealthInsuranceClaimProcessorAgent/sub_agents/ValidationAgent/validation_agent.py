@@ -17,8 +17,9 @@ class ValidationResult(BaseModel):
     missing_documents: List[str] = Field(default_factory=list, description="List of missing document types")
     discrepancies: List[str] = Field(default_factory=list, description="List of data discrepancies found")
     validation_score: float = Field(..., description="Overall validation score (0-1)")
-    data_quality_issues: List[str] = Field(default_factory=list, description="List of data quality issues")
+    data_quality_issues: List[str] = Field(default_factory=list, description="List of data quality issues including medication/procedure misclassification")
     recommendations: List[str] = Field(default_factory=list, description="Recommendations for improvement")
+    agent_compliance_issues: List[str] = Field(default_factory=list, description="Issues with agents processing inappropriate document types")
 
 
 def create_validation_agent() -> LlmAgent:
@@ -60,23 +61,31 @@ def create_validation_agent() -> LlmAgent:
            - Invalid date formats
            - Suspicious amounts or values
            - Incomplete information
+           - Proper separation of medications vs medical procedures
         
         4. BUSINESS LOGIC VALIDATION:
            - Service dates should be between admission and discharge dates
            - Total amounts should be reasonable
            - Length of stay should match date differences
            - Insurance claim numbers should be consistent
+           - Medications should be listed separately from procedures
+           - Procedures should align with diagnoses
+        
+        CRITICAL VALIDATION POINTS:
+        - Medications (drugs, pills, injections) should NOT be classified as procedures
+        - Medical procedures (surgeries, treatments, therapies) should NOT be in medication lists
+        - Each agent should only process their designated document types
         
         Validation criteria:
-        - Critical issues: Missing essential documents, major discrepancies
+        - Critical issues: Missing essential documents, major discrepancies, medication/procedure confusion
         - Warning issues: Minor inconsistencies, missing optional fields
         - Info issues: Recommendations for data improvement
         
         Calculate a validation score (0-1) based on:
-        - 1.0: All documents present, no discrepancies
+        - 1.0: All documents present, no discrepancies, proper categorization
         - 0.8-0.9: Minor issues or missing optional data
         - 0.5-0.7: Some discrepancies or missing important data
-        - 0.0-0.4: Major issues, missing critical documents
+        - 0.0-0.4: Major issues, missing critical documents, classification errors
         
         Return structured validation results with specific issues and recommendations.
         """
