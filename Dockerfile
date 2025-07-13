@@ -1,50 +1,55 @@
+# Single-stage build for Health Insurance Claim Processor
 FROM python:3.11-slim
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
+# Install uv for fast dependency management
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Create app directory
+# Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies required for building
 RUN apt-get update && apt-get install -y \
+    gcc \
+    build-essential \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
-# Install uv
-RUN pip install uv
+# Copy dependency files first (better layer caching)
+COPY pyproject.toml uv.lock* README.md ./
 
+# Install dependencies (excluding dev dependencies for production)
+RUN uv sync --no-dev --frozen
 
-# Copy project files
-COPY pyproject.toml ./
-COPY .env ./
-COPY .env.debug ./
-COPY uv.lock ./
-
-# Install dependencies
-RUN uv sync --no-dev
-
-# Copy source code and all relevant directories
+# Copy application code
 COPY agents/ agents/
 COPY services/ services/
 COPY utils/ utils/
 COPY main.py ./
-COPY tests/ tests/
+COPY .env ./
+COPY .env.debug ./
 
-# Create non-root user
-RUN adduser --disabled-password --gecos "" appuser && \
+# Create non-root user for security
+RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 USER appuser
-
 
 # Expose port
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+# Environment variables for production
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONPATH=/app
+ENV UVICORN_HOST=0.0.0.0
+ENV UVICORN_PORT=8000
 
+# Add labels for metadata
+LABEL org.opencontainers.image.title="Health Insurance Claim Processor"
+LABEL org.opencontainers.image.description="Agentic backend pipeline for medical insurance claim documents"
+LABEL org.opencontainers.image.version="0.1.0"
+LABEL org.opencontainers.image.authors="nihaal.a084@gmail.com"
 
-# Run the application
-CMD ["uv", "run", "fastapi", "dev", "main.py"]
+# Run the application with proper signal handling using uv
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

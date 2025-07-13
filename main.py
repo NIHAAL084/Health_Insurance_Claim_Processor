@@ -5,8 +5,6 @@ import sys
 from contextlib import asynccontextmanager
 from typing import List, Any
 from datetime import datetime, timezone
-
-import uvicorn
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -248,6 +246,7 @@ def main():
     """Main entry point for running the application"""
     settings = get_settings()
     
+    import uvicorn
 
     uvicorn.run(
         "main:app",

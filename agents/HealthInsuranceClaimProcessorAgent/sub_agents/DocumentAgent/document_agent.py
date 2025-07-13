@@ -95,7 +95,9 @@ def create_document_classification_agent() -> LlmAgent:
                 api_timeout=600
             ),
             output_key="documents",
-            output_schema=DocumentClassificationResult
+            output_schema=DocumentClassificationResult,
+            disallow_transfer_to_parent=True,
+            disallow_transfer_to_peers=True
         )
         
         logger.info(f"✅ Document Classification Agent created successfully with model: ollama/{ollama_model}")

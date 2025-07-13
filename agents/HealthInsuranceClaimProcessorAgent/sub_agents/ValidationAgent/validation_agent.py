@@ -102,7 +102,9 @@ def create_validation_agent() -> LlmAgent:
                 api_timeout=600
             ),
             output_key="validation_results",
-            output_schema=ValidationResult
+            output_schema=ValidationResult,
+            disallow_transfer_to_parent=True,
+            disallow_transfer_to_peers=True
         )
         
         logger.info(f"✅ Validation Agent created successfully with model: ollama/{ollama_model}")

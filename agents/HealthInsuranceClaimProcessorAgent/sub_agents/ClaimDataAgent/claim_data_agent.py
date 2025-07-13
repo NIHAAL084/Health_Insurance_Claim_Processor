@@ -129,7 +129,9 @@ def create_claim_data_agent() -> LlmAgent:
                 api_timeout=600
             ),
             output_key="claim_data",
-            output_schema=ClaimDataProcessingResult
+            output_schema=ClaimDataProcessingResult,
+            disallow_transfer_to_parent=True,
+            disallow_transfer_to_peers=True
         )
         
         logger.info(f"✅ Claim Data Processing Agent created successfully with model: ollama/{ollama_model}")

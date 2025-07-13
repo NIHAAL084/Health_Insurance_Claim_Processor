@@ -115,7 +115,9 @@ def create_claim_decision_agent() -> LlmAgent:
                 api_timeout=600
             ),
             output_key="claim_decision",
-            output_schema=ClaimDecision
+            output_schema=ClaimDecision,
+            disallow_transfer_to_parent=True,
+            disallow_transfer_to_peers=True
         )
         
         logger.info(f"✅ Claim Decision Agent created successfully with model: ollama/{ollama_model}")

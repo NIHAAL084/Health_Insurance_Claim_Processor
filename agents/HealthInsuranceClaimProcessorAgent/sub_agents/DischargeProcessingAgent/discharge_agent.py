@@ -112,7 +112,9 @@ def create_discharge_processing_agent() -> LlmAgent:
                 api_timeout=600
             ),
             output_key="discharge_data",
-            output_schema=DischargeProcessingResult
+            output_schema=DischargeProcessingResult,
+            disallow_transfer_to_parent=True,
+            disallow_transfer_to_peers=True
         )
         
         logger.info(f"✅ Discharge Processing Agent created successfully with model: ollama/{ollama_model}")

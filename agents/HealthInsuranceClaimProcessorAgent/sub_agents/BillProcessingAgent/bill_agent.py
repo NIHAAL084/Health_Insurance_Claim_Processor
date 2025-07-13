@@ -105,7 +105,9 @@ def create_bill_processing_agent() -> LlmAgent:
                 api_timeout=600
             ),
             output_key="bill_data",
-            output_schema=BillProcessingResult
+            output_schema=BillProcessingResult,
+            disallow_transfer_to_parent=True,
+            disallow_transfer_to_peers=True
         )
         
         logger.info(f"✅ Bill Processing Agent created successfully with model: ollama/{ollama_model}")

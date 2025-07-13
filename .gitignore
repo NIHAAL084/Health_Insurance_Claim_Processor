@@ -178,9 +178,6 @@ tmp/
 ehthumbs.db
 Thumbs.db
 
-# Docker
-.dockerignore
-
 # UV
 .uv/
 

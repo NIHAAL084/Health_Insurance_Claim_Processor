@@ -1,4 +1,5 @@
-# Overview
+
+# Health Insurance Claim Processor
 
 The Health Insurance Claim Processor is an agentic backend pipeline that automates the extraction, classification, validation, and decision-making for medical insurance claim documents. It is designed for hospitals, TPAs, and insurance companies to streamline claim processing, reduce manual effort, and improve accuracy.
 
@@ -11,19 +12,36 @@ The Health Insurance Claim Processor is an agentic backend pipeline that automat
 
 ---
 
-## How It Works
+## System Overview & Agent Flow
 
-1. **Upload**: User uploads one or more PDF files (bills, discharge summaries, ID cards, etc.) via the `/process-claim` endpoint.
-2. **Text Extraction**: The system uses PyPDF to extract text from each PDF (no external OCR required).
-3. **Document Classification**: An LLM agent classifies each document (bill, discharge, ID card, etc.).
-4. **Parallel Agent Processing**: Specialized agents extract structured data from each document type.
+The system processes uploaded PDFs (bills, discharge summaries, ID cards, claim forms, etc.) through a multi-agent pipeline:
+
+```mermaid
+flowchart TD
+    A[Upload PDF(s)] --> B[Text Extraction (PyPDF)]
+    B --> C[Document Classification Agent]
+    C --> D1[Bill Processing Agent]
+    C --> D2[Discharge Processing Agent]
+    C --> D3[Claim Data Agent]
+    D1 & D2 & D3 --> E[Validation Agent]
+    E --> F[Claim Decision Agent]
+    F --> G[API Response]
+```
+
+**Step-by-step:**
+
+1. **Upload**: User uploads one or more PDF files via the `/process-claim` endpoint.
+2. **Text Extraction**: PyPDF extracts text from each PDF (no external OCR required).
+3. **Document Classification**: An LLM agent classifies each document (bill, discharge, ID card, claim form, etc.).
+4. **Parallel Agent Processing**: Specialized agents extract structured data from each document type:
+    - **Bill Processing Agent**: Extracts billing details (amounts, hospital, patient, etc.)
+    - **Discharge Processing Agent**: Extracts discharge summary details (diagnosis, dates, instructions, etc.)
+    - **Claim Data Agent**: Extracts data from ID cards, correspondence, prescriptions, etc.
 5. **Validation**: The validation agent checks for missing documents, inconsistencies, and data quality issues.
 6. **Claim Decision**: The claim decision agent makes an automated approve/reject/pending decision with reasoning and confidence.
 7. **Response**: The API returns a structured JSON with all agent outputs, validation, and decision.
 
----
-
-## Agent Roles
+**Agent Roles:**
 
 - **PDFProcessor**: Extracts text from PDFs using PyPDF.
 - **Document Classification Agent**: Classifies each document by type.
@@ -37,36 +55,99 @@ The Health Insurance Claim Processor is an agentic backend pipeline that automat
 
 ## Response Format Explained
 
-The `/process-claim` endpoint returns a JSON object with the following fields:
+The `/process-claim` endpoint returns a comprehensive JSON object with all extracted, validated, and decision data. The response is richer and more detailed when a full set of claim documents (bill, discharge summary, claim form, ID card, etc.) is provided.
+
+**Response Fields:**
 
 - `request_id`: Unique identifier for the claim processing request.
 - `processing_time`: Time taken to process the request (seconds).
 - `timestamp`: ISO timestamp when processing completed.
 - `workflow_status`: `completed`, `no_outputs`, or `error`.
 - `agent_outputs`:
-  - `documents`: List of classified documents with type, filename, content, and confidence.
-  - `bill_data`: List of extracted bill details.
-  - `discharge_data`: List of extracted discharge summary details.
-  - `claim_data`: List of extracted claim-related data (ID cards, correspondence, etc.).
-  - `validation_results`: Validation summary (missing documents, discrepancies, score).
-  - `claim_decision`: Final decision, reason, and confidence score.
+  - `documents`: List of all classified documents, each with type, filename, extracted content, and confidence score.
+  - `bill_data`: List of extracted bill details (hospital, patient, amounts, service details, etc.).
+  - `discharge_data`: List of extracted discharge summary details (diagnosis, admission/discharge dates, procedures, etc.).
+  - `claim_data`: List of extracted claim-related data (ID cards, correspondence, prescriptions, etc.).
+  - `validation_results`: Validation summary (missing documents, discrepancies, validation score, recommendations, agent compliance issues).
+  - `claim_decision`: Final decision (`approved`, `rejected`, or `pending`), reason, confidence score, and recommended actions.
 - `raw_session_state`: (Advanced) Full agent state for debugging or audit.
 
-**Example:**
+**Note:**
+Due to hardware limitations, the provided example and test runs may only include a single bill. In production, when a large PDF or a full set of documents is uploaded, the response will include:
+
+- Multiple documents (bill, discharge summary, claim form, ID card, etc.)
+- Complete extraction of all relevant fields from each document
+- Detailed validation and cross-checking between documents
+- A more confident and automated claim decision
+
+**Example (full, idealized response):**
 
 ```json
 {
   "request_id": "a1b2c3d4-5678-90ef-ghij-klmnopqrstuv",
-  "processing_time": 12.34,
+  "processing_time": 18.42,
   "timestamp": "2025-07-12T12:34:56.789Z",
   "workflow_status": "completed",
   "agent_outputs": {
-    "documents": [ ... ],
-    "bill_data": [ ... ],
-    "discharge_data": [ ... ],
-    "claim_data": [ ... ],
-    "validation_results": { ... },
-    "claim_decision": { ... }
+    "documents": [
+      { "type": "bill", "filename": "bill.pdf", "content": "...", "confidence": 0.98 },
+      { "type": "discharge_summary", "filename": "discharge.pdf", "content": "...", "confidence": 0.97 },
+      { "type": "claim_form", "filename": "claim_form.pdf", "content": "...", "confidence": 0.96 },
+      { "type": "id_card", "filename": "id_card.pdf", "content": "...", "confidence": 0.99 }
+    ],
+    "bill_data": [
+      {
+        "hospital_name": "ABC Hospital",
+        "total_amount": 12500,
+        "date_of_service": "2024-04-10",
+        "patient_name": "John Doe",
+        "bill_number": "BILL12345",
+        "insurance_amount": 10000,
+        "patient_amount": 2500,
+        "service_details": ["Surgery", "Room Charges", "Medicines"],
+        "doctor_name": "Dr. Smith",
+        "department": "Orthopedics"
+      }
+    ],
+    "discharge_data": [
+      {
+        "patient_name": "John Doe",
+        "admission_date": "2024-04-05",
+        "discharge_date": "2024-04-10",
+        "primary_diagnosis": "Fracture",
+        "procedures_performed": ["Surgery"],
+        "doctor_name": "Dr. Smith",
+        "hospital_name": "ABC Hospital",
+        "department": "Orthopedics"
+      }
+    ],
+    "claim_data": [
+      {
+        "document_type": "id_card",
+        "policy_number": "XYZ1234567",
+        "member_id": "M123456",
+        "insurance_company": "Best Insurance Co.",
+        "coverage_type": "Family Floater"
+      },
+      {
+        "document_type": "claim_form",
+        "claim_number": "CLM987654",
+        "date_filed": "2024-04-11"
+      }
+    ],
+    "validation_results": {
+      "missing_documents": [],
+      "discrepancies": [],
+      "validation_score": 100.0,
+      "recommendations": [],
+      "agent_compliance_issues": []
+    },
+    "claim_decision": {
+      "status": "approved",
+      "reason": "All required documents present and data is consistent.",
+      "confidence_score": 98.5,
+      "recommended_actions": []
+    }
   },
   "raw_session_state": { ... }
 }
@@ -188,7 +269,20 @@ PDFProcessor (PyPDF OCR/Text Extraction)
    uv sync
    ```
 
-2. **Set up environment variables:**
+2. **Set up Ollama and pull a model:**
+
+   Ollama is required to run local LLMs (e.g., mistral, llama3). If you haven't already:
+
+   - [Install Ollama](https://ollama.com/download) for your platform and start the Ollama service.
+   - Pull a model (e.g., mistral):
+
+     ```bash
+     ollama pull mistral
+     ```
+
+   You can use any supported model (e.g., llama3) by pulling it and setting `OLLAMA_MODEL` accordingly.
+
+3. **Set up environment variables:**
 
    ```bash
    cp .env.example .env
@@ -196,20 +290,20 @@ PDFProcessor (PyPDF OCR/Text Extraction)
    # Set LOG_LEVEL as needed (DEBUG, INFO, etc.)
    ```
 
-3. **Run the application (development):**
+4. **Run the application (development):**
 
    ```bash
    uv run fastapi dev main.py
    ```
 
-4. **Run the application with logging to a file (production-style):**
+5. **Run the application with logging to a file (production-style):**
 
    ```bash
    uvicorn main:app --host 0.0.0.0 --port 8000 --log-level info --log-config utils/logger.py --log-file app.log
    # or, for custom logging, see utils/logger.py and config.py
    ```
 
-5. **Test the API with curl:**
+6. **Test the API with curl:**
 
    ```bash
    curl --max-time 1200 -X POST "http://127.0.0.1:8000/process-claim" \
@@ -228,58 +322,12 @@ Process medical insurance claim documents (PDFs). Returns a structured JSON resp
 - Content-Type: `multipart/form-data`
 - Field: `files` (multiple PDF files)
 
-**Example Response:**
+**Response:**
+See the detailed example and field explanations in the [Response Format Explained](#response-format-explained) section above. The response includes:
 
-```json
-{
-  "request_id": "a1b2c3d4-5678-90ef-ghij-klmnopqrstuv",
-  "processing_time": 12.34,
-  "timestamp": "2025-07-12T12:34:56.789Z",
-  "workflow_status": "completed",
-  "agent_outputs": {
-    "documents": [
-      {
-        "type": "bill",
-        "filename": "25013102111-2_20250427_120738-Appolo.pdf",
-        "content": "...extracted text...",
-        "confidence": 0.98
-      }
-    ],
-    "bill_data": [
-      {
-        "hospital_name": "ABC Hospital",
-        "total_amount": 12500,
-        "date_of_service": "2024-04-10",
-        "patient_name": "John Doe"
-      }
-    ],
-    "discharge_data": [
-      {
-        "patient_name": "John Doe",
-        "admission_date": "2024-04-05",
-        "discharge_date": "2024-04-10",
-        "primary_diagnosis": "Fracture"
-      }
-    ],
-    "claim_data": [
-      {
-        "document_type": "id_card",
-        "policy_number": "XYZ1234567"
-      }
-    ],
-    "validation_results": {
-      "missing_documents": [],
-      "discrepancies": [],
-      "validation_score": 1.0
-    },
-    "claim_decision": {
-      "status": "approved",
-      "reason": "All required documents present and data is consistent",
-      "confidence_score": 0.97
-    }
-  }
-}
-```
+- `request_id`, `processing_time`, `timestamp`, `workflow_status`
+- `agent_outputs` (with `documents`, `bill_data`, `discharge_data`, `claim_data`, `validation_results`, `claim_decision`)
+- `raw_session_state` (for advanced debugging)
 
 ## Development & Testing
 
@@ -301,64 +349,81 @@ less app.log
 
 ### Docker Deployment
 
+Build and run the application in a containerized environment:
+
 ```bash
-docker build -t claim-processor .
-docker run -p 8000:8000 claim-processor
+# Build the Docker image
+docker build -t health-claim-processor .
+
+# Run the container (default: port 8000)
+docker run --rm -p 8000:8000 \
+  -e OLLAMA_MODEL=mistral:latest \
+  -e LOG_LEVEL=INFO \
+  health-claim-processor
 ```
 
-The container will start the FastAPI server on port 8000 using `uv` and the `main.py` entrypoint as defined in the Dockerfile.
+**Notes:**
+
+- The container runs as a non-root user for security.
+- All environment variables in `.env` can be overridden with `-e` flags at runtime.
+- The default entrypoint uses `uv` and `uvicorn` for robust FastAPI serving.
+- For production, use a process manager or container orchestration for resilience.
 
 ## Project Structure
 
+## Project Directory Structure
+
 ```
-├── agents/
+├── agents/                         # All agent logic and orchestration
 │   └── HealthInsuranceClaimProcessorAgent/
-│       ├── agent.py
-│       ├── workflow_agent.py
-│       └── sub_agents/
-│           ├── BillProcessingAgent/
-│           │   └── bill_agent.py
-│           ├── ClaimDataAgent/
-│           │   └── claim_data_agent.py
-│           ├── ClaimDecisionAgent/
-│           │   └── claim_decision_agent.py
-│           ├── DischargeProcessingAgent/
-│           │   └── discharge_agent.py
-│           ├── DocumentAgent/
-│           │   └── document_agent.py
-│           └── ValidationAgent/
-│               └── validation_agent.py
-├── apollo_pdf_extracted_text.txt
-├── main.py
-├── services/
-│   ├── claim_processor.py
-│   └── pdf_processor.py
-├── test_files/
-│   ├── 25013102111-2_20250427_120738-Appolo.pdf
-│   ├── 25013102111-2_20250427_120738-Appolo-ts.pdf
-│   ├── 25020300401-3_20250427_120739-max health.pdf
-│   ├── 25020500888-2_20250427_120744-ganga ram.pdf
-│   └── 25020701680-2_20250427_120746-fortis.pdf
-├── utils/
-│   ├── config.py
-│   └── logger.py
-├── Dockerfile
-├── README.md
-├── pyproject.toml
-├── uv.lock
-├── .env
-├── .env.debug
-├── .gitignore
+│       ├── agent.py                # Main agent entrypoint
+│       ├── workflow_agent.py       # Orchestrates the agent workflow
+│       └── sub_agents/             # Specialized sub-agents for each document type
+│           ├── BillProcessingAgent/bill_agent.py           # Bill extraction logic
+│           ├── ClaimDataAgent/claim_data_agent.py          # ID card, correspondence, prescription extraction
+│           ├── ClaimDecisionAgent/claim_decision_agent.py  # Final claim decision logic
+│           ├── DischargeProcessingAgent/discharge_agent.py # Discharge summary extraction
+│           ├── DocumentAgent/document_agent.py             # Document classification logic
+│           └── ValidationAgent/validation_agent.py         # Data validation logic
+├── main.py                          # FastAPI app entrypoint
+├── services/                        # Service layer for business logic
+│   ├── claim_processor.py           # Main claim processing service
+│   └── pdf_processor.py             # PDF text extraction service
+├── utils/                           # Utility modules
+│   ├── config.py                    # Configuration management
+│   └── logger.py                    # Logging setup
+├── test_files/                      # Example/test PDFs
+├── Dockerfile                       # Docker build instructions
+├── pyproject.toml                   # Python project metadata & dependencies
+├── uv.lock                          # Locked dependency versions
+├── .env                             # Environment variables (user config)
+├── .env.debug                       # Debug environment variables
+├── README.md                        # Project documentation
+├── .gitignore                       # Git ignore rules
 ```
+
+**Other files:**
+
+- `extracted_text_from_pdf_used_for_testrun.txt`: the text extracted from the test PDF.
+- `testrun.md`: output of the API request and response for the test run.
+
+Each file/folder is commented above for its purpose in the project.
 
 ## Configuration
 
 All configuration is managed via `.env` and `utils/config.py`. Key settings:
 
+### Example .env file
+
+```env
+OLLAMA_MODEL=mistral:latest
+LOG_LEVEL=DEBUG
+```
+
+Copy this to `.env` and adjust as needed for your environment.
+
 - `OLLAMA_MODEL`: LLM model to use (e.g., `mistral:latest`)
 - `LOG_LEVEL`: Logging level (DEBUG, INFO, etc.)
-- `MAX_FILE_SIZE`: Maximum PDF upload size (default: 10MB)
-- `ALLOWED_EXTENSIONS`: Allowed file types (default: pdf)
 
 See `utils/config.py` for all options.
 
