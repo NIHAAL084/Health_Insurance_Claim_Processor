@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Health Insurance Claim Processor</title>
+    <link rel="stylesheet" href="/frontend/style.css" />
+</head>
+
+<body>
+    <div class="container">
+        <div class="main-flex" id="mainFlex">
+            <div class="form-section">
+                <div class="heading-wrapper">
+                    <h1 id="mainHeading">Health Insurance Claim Processor</h1>
+                </div>
+                <form id="uploadForm">
+                    <label for="pdfFiles">Upload one or more PDF files:</label>
+                    <input type="file" id="pdfFiles" name="pdfFiles" accept="application/pdf" multiple required />
+                    <div id="fileList" class="file-list"></div>
+                    <button type="submit">Submit</button>
+                </form>
+                <div id="status"></div>
+            </div>
+            <div class="tab-separator hidden" id="tabSeparator"></div>
+            <div class="response-section" id="responseSection" style="display:none;">
+                <h2>Response</h2>
+                <div id="result"></div>
+            </div>
+        </div>
+    </div>
+    <script src="/frontend/app.js"></script>
+</body>
+
+</html>

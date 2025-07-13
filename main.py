@@ -7,7 +7,9 @@ from typing import List, Any
 from datetime import datetime, timezone
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+import pathlib
 
 # Import from new root-level structure
 from services.claim_processor import ClaimProcessingService
@@ -89,6 +91,10 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     
+    # Mount the frontend directory to serve static files
+    frontend_path = pathlib.Path(__file__).parent / "frontend"
+    app.mount("/frontend", StaticFiles(directory=frontend_path, html=True), name="frontend")
+
     return app
 
 
@@ -103,14 +109,11 @@ def get_claim_service() -> ClaimProcessingService:
     return claim_service
 
 
-@app.get("/", tags=["Health"])
-async def root():
-    """Root endpoint - health check"""
-    return {
-        "message": "Health Insurance Claim Processor API",
-        "status": "healthy",
-        "version": get_settings().app_version
-    }
+@app.get("/", tags=["Health"], include_in_schema=False)
+def serve_frontend():
+    """Serve the frontend index.html at the root URL"""
+    frontend_path = pathlib.Path(__file__).parent / "frontend"
+    return FileResponse(frontend_path / "index.html")
 
 
 @app.get("/health", tags=["Health"])
