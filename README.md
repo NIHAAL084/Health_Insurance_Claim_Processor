@@ -18,14 +18,14 @@ The system processes uploaded PDFs (bills, discharge summaries, ID cards, claim 
 
 ```mermaid
 flowchart TD
-    A(Upload PDFs) --> B(Text Extraction (PyPDF))
-    B --> C(Document Agent)
-    C --> D1(Bill Processing Agent)
-    C --> D2(Discharge Processing Agent)
-    C --> D3(Claim Data Agent)
-    D1 & D2 & D3 --> E(Validation Agent)
-    E --> F(Claim Decision Agent)
-    F --> G(API Response)
+    A[Upload PDFs] --> B[Text Extraction - PyPDF]
+    B --> C[Document Agent]
+    C --> D1[Bill Processing Agent]
+    C --> D2[Discharge Processing Agent]
+    C --> D3[Claim Data Agent]
+    D1 & D2 & D3 --> E[Validation Agent]
+    E --> F[Claim Decision Agent]
+    F --> G[API Response]
 ```
 
 **Step-by-step:**
