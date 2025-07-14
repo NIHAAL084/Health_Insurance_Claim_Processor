@@ -1,6 +1,7 @@
 """Document Classification Agent for categorizing and separating extracted documents"""
 
 import os
+from utils.config import get_ollama_url
 import logging
 from typing import List, Optional
 from pydantic import BaseModel, Field
@@ -39,7 +40,8 @@ def create_document_classification_agent() -> LlmAgent:
     
     try:
         ollama_model = os.environ.get("OLLAMA_MODEL", "llama3.2:3b")
-        logger.debug(f"📝 Document Classification Agent settings: ollama_model={ollama_model}")
+        ollama_url = get_ollama_url()
+        logger.debug(f"📝 Document Classification Agent settings: ollama_model={ollama_model}, ollama_url={ollama_url}")
         
         instruction = """
         You are a document classification and separation agent specialized in processing medical insurance documents.
@@ -90,6 +92,7 @@ def create_document_classification_agent() -> LlmAgent:
             instruction=instruction,
             model=LiteLlm(
                 model=f"ollama/{ollama_model}",
+                base_url=ollama_url,
                 timeout=600,  # 10 minutes timeout
                 request_timeout=600,
                 api_timeout=600

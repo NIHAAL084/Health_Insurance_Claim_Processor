@@ -1,6 +1,7 @@
 """Discharge Summary Processing Agent for extracting structured data from discharge summaries"""
 
 import os
+from utils.config import get_ollama_url
 import logging
 from typing import List, Optional
 from pydantic import BaseModel, Field
@@ -46,7 +47,8 @@ def create_discharge_processing_agent() -> LlmAgent:
     
     try:
         ollama_model = os.environ.get("OLLAMA_MODEL", "llama3.2:3b")
-        logger.debug(f"📝 Discharge Processing Agent settings: ollama_model={ollama_model}")
+        ollama_url = get_ollama_url()
+        logger.debug(f"📝 Discharge Processing Agent settings: ollama_model={ollama_model}, ollama_url={ollama_url}")
         
         instruction = """
         You are a discharge summary processing agent specialized in extracting structured data from hospital discharge summaries.
@@ -107,6 +109,7 @@ def create_discharge_processing_agent() -> LlmAgent:
             instruction=instruction,
             model=LiteLlm(
                 model=f"ollama/{ollama_model}",
+                base_url=ollama_url,
                 timeout=600,  # 10 minutes timeout
                 request_timeout=600,
                 api_timeout=600

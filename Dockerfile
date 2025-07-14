@@ -22,6 +22,7 @@ COPY pyproject.toml uv.lock* README.md ./
 # Install dependencies (excluding dev dependencies for production)
 RUN uv sync --no-dev --frozen
 
+
 # Copy application code
 COPY agents/ agents/
 COPY services/ services/
@@ -29,6 +30,9 @@ COPY utils/ utils/
 COPY main.py ./
 COPY .env ./
 COPY .env.debug ./
+
+# Copy frontend static files
+COPY frontend/ frontend/
 
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser && \
