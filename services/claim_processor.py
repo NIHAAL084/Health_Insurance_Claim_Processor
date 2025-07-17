@@ -131,15 +131,12 @@ class ClaimProcessingService:
             "processing_time": processing_time,
             "timestamp": timestamp.isoformat(),
             "workflow_status": "completed" if session_state else "no_outputs",
-            "agent_outputs": {
-                "documents": session_state.get("documents"),
-                "bill_data": session_state.get("bill_data"),
-                "discharge_data": session_state.get("discharge_data"),
-                "claim_data": session_state.get("claim_data"),
-                "validation_results": session_state.get("validation_results"),
-                "claim_decision": session_state.get("claim_decision")
-            },
-            "raw_session_state": session_state
+            "documents": session_state.get("documents"),
+            "bill_data": session_state.get("bill_data"),
+            "discharge_data": session_state.get("discharge_data"),
+            "claim_data": session_state.get("claim_data"),
+            "validation_results": session_state.get("validation_results"),
+            "claim_decision": session_state.get("claim_decision")
         }
         return final_report
     
@@ -153,7 +150,6 @@ class ClaimProcessingService:
             "workflow_status": "error",
             "error": str(error),
             "agent_outputs": None,
-            "raw_session_state": None,
             "recommended_actions": ["Contact support" if "timeout" in error else "Retry processing"]
         }
         return error_report

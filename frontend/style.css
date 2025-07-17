@@ -64,11 +64,8 @@ body {
     min-height: 100vh;
 }
 
+/* Only one section is visible at a time, so no flex layout needed */
 .main-flex {
-    display: flex;
-    gap: 0;
-    justify-content: stretch;
-    align-items: stretch;
     width: 100vw;
     min-height: 100vh;
     position: relative;
@@ -115,28 +112,14 @@ body {
     margin-bottom: 48px;
 }
 
-#mainHeading.extra-space {
-    font-size: clamp(2.8rem, 6vw, 4rem);
-    transition: font-size 0.3s;
-}
-}
-
-margin-top: 18px;
-}
-
 #mainHeading {
     text-align: center;
     color: #2d3a4a;
-    font-size: clamp(2.1rem, 4vw, 2.8rem);
+    font-size: clamp(2.8rem, 6vw, 4rem);
     margin-bottom: 0;
     margin-top: 0;
     letter-spacing: 0.5px;
     transition: font-size 0.3s;
-}
-
-#mainHeading.shrink {
-    font-size: clamp(1.5rem, 2.5vw, 2.1rem);
-    margin-bottom: 0;
 }
 
 form {
@@ -195,13 +178,21 @@ button:hover {
     border-radius: 0;
     box-shadow: none;
     padding: 48px 32px 32px 32px;
-    flex: 1 1 0;
     min-width: 0;
     min-height: 100vh;
-    display: flex;
+    display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    width: 100vw;
+}
+
+#formSection {
+    display: flex;
+}
+
+#responseSection {
+    display: none;
 }
 
 .file-list {
@@ -229,6 +220,25 @@ button:hover {
     text-align: center;
     line-height: 1.1;
     transition: font-size 0.3s;
+}
+
+#backButton {
+    margin-top: 32px;
+    background: linear-gradient(90deg, #6366f1 0%, #60a5fa 100%);
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 12px 32px;
+    font-size: 1.08rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);
+}
+
+#backButton:hover {
+    background: linear-gradient(90deg, #4f46e5 0%, #2563eb 100%);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.13);
 }
 
 .form-section.shrink-width {
@@ -273,11 +283,6 @@ button:hover {
 }
 
 @media (max-width: 900px) {
-    .main-flex {
-        flex-direction: column;
-        gap: 0;
-        min-height: unset;
-    }
 
     .form-section,
     .response-section {

@@ -20,31 +20,31 @@ updateFileList();
 // --- Dynamic Heading Size ---
 const mainHeading = document.getElementById('mainHeading');
 const responseSection = document.getElementById('responseSection');
-function adjustHeadingSize() {
-    const headingWrapper = mainHeading.parentElement;
-    const formSection = document.querySelector('.form-section');
-    const tabSeparator = document.getElementById('tabSeparator');
-    if (responseSection.style.display === 'block') {
-        mainHeading.classList.add('shrink');
-        mainHeading.classList.remove('extra-space');
-        headingWrapper.classList.remove('extra-space');
-        formSection.classList.add('shrink-width');
-        responseSection.classList.add('expanded-width');
-        tabSeparator.classList.remove('hidden');
-        formSection.classList.remove('enlarge-form');
-    } else {
-        mainHeading.classList.remove('shrink');
-        mainHeading.classList.add('extra-space');
-        headingWrapper.classList.add('extra-space');
-        formSection.classList.remove('shrink-width');
-        responseSection.classList.remove('expanded-width');
-        tabSeparator.classList.add('hidden');
-        formSection.classList.add('enlarge-form');
-    }
+const formSection = document.getElementById('formSection');
+const backButton = document.getElementById('backButton');
+
+function showResponsePage() {
+    formSection.style.display = 'none';
+    responseSection.style.display = 'flex';
+    window.scrollTo(0, 0);
 }
-const observer = new MutationObserver(adjustHeadingSize);
-observer.observe(responseSection, { attributes: true, attributeFilter: ['style'] });
-adjustHeadingSize();
+
+function showFormPage() {
+    responseSection.style.display = 'none';
+    formSection.style.display = 'flex';
+    window.scrollTo(0, 0);
+}
+
+if (backButton) {
+    backButton.addEventListener('click', function () {
+        showFormPage();
+        // Optionally clear result/status
+        document.getElementById('result').innerHTML = '';
+        document.getElementById('status').textContent = '';
+        filesInput.value = '';
+        updateFileList();
+    });
+}
 
 // --- Form Submission ---
 document.getElementById('uploadForm').addEventListener('submit', async function (e) {
@@ -53,9 +53,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function 
     const resultDiv = document.getElementById('result');
     statusDiv.textContent = '';
     resultDiv.textContent = '';
-    responseSection.style.display = 'none';
-    responseSection.classList.remove('expanded');
-    adjustHeadingSize();
+    showFormPage();
 
     updateFileList();
     const files = filesInput.files;
@@ -80,21 +78,13 @@ document.getElementById('uploadForm').addEventListener('submit', async function 
             const error = await response.json();
             statusDiv.textContent = 'Error: ' + (error.message || response.statusText);
             resultDiv.textContent = '';
-            responseSection.style.display = 'block';
+            showResponsePage();
             return;
         }
         const data = await response.json();
         statusDiv.textContent = 'Processing complete!';
         resultDiv.innerHTML = renderJsonToHtml(data);
-        responseSection.style.display = 'block';
-        // Expand response tab if response is large
-        if (JSON.stringify(data).length > 2000) {
-            responseSection.classList.add('expanded');
-        } else {
-            responseSection.classList.remove('expanded');
-        }
-        adjustHeadingSize();
-
+        showResponsePage();
         // --- Helper: Render JSON as HTML ---
         function renderJsonToHtml(obj) {
             if (typeof obj !== 'object' || obj === null) {
@@ -110,15 +100,13 @@ document.getElementById('uploadForm').addEventListener('submit', async function 
             ).join('')}</table>`;
         }
         function escapeHtml(str) {
-            return str.replace(/[&<>"']/g, function (c) {
+            return str.replace(/[&<>"]'/g, function (c) {
                 return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
             });
         }
     } catch (err) {
         statusDiv.textContent = 'Error: ' + err.message;
         resultDiv.textContent = '';
-        responseSection.style.display = 'block';
-        responseSection.classList.remove('expanded');
-        adjustHeadingSize();
+        showResponsePage();
     }
 });
