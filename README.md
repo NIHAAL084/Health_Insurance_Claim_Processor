@@ -5,11 +5,65 @@ The Health Insurance Claim Processor is a full-stack solution for automating the
 
 ## Features
 
-- **Modern Web Frontend:** Responsive, visually appealing UI for uploading and processing multiple PDF files, with dynamic resizing, file list display, and a two-tab layout (form and response). Served at [http://localhost:8000/](http://localhost:8000/).
-- **Automated Claims Processing:** Multi-agent backend pipeline for extraction, classification, processing, validation, and decision-making.
-- **Structured Output:** Converts unstructured PDFs into clean, minimal JSON with detailed validation and claim decision.
-- **Validation & Decision:** Checks for missing documents, inconsistencies, and provides automated approve/reject/pending decisions with reasoning and confidence.
-- **Easy Integration:** REST API for direct integration with hospital/insurance portals or other systems.
+## Visual Assets & Example Outputs
+
+### Agent Trace Visualization
+
+**`agent-trace.jpeg`**
+
+This image provides a visual trace of the agent workflow for a single claim processing request. It shows:
+
+- The full invocation tree for the request, including all agent runs and LLM calls.
+- The sequence and parallelism of agent execution:
+  - The `HealthInsuranceClaimProcessorAgent` orchestrates the entire workflow.
+  - The `DocumentAgent` runs first to classify documents.
+  - The `ParallelDocumentProcessingAgent` then launches specialized agents in parallel:
+    - `BillProcessingAgent`
+    - `DischargeProcessingAgent`
+    - `ClaimDataAgent`
+  - Each of these agents calls the LLM and processes its respective document type.
+  - After all parallel agents finish, the `ValidationAgent` runs to check for missing documents, inconsistencies, and data quality issues.
+  - Finally, the `ClaimDecisionAgent` makes the final claim decision.
+- The duration (in milliseconds) for each agent and LLM call, making it easy to identify bottlenecks or slow steps.
+
+This trace is useful for debugging, performance analysis, and understanding the orchestration of the multi-agent pipeline.
+
+**Example:**
+
+![Agent Trace](agent-trace.jpeg)
+
+---
+
+### Frontend Homepage Screenshot
+
+**`frontend-homepage.jpeg`**
+
+This image shows the appearance of the web application's homepage. It demonstrates:
+
+- The modern, clean UI for uploading one or more PDF files.
+- The large, prominent heading "Health Insurance Claim Processor".
+- The file input, file list, and submit button.
+- Responsive design and visually appealing layout.
+
+**Example:**
+
+![Frontend Homepage](frontend-homepage.jpeg)
+
+---
+
+### Example Response Output (PDF)
+
+**`frontend-testrun-response.pdf`**
+
+This PDF is a printout screenshot of the actual response received on the frontend after uploading a test PDF. It shows:
+
+- The structured JSON output as rendered by the frontend.
+- The formatting and readability of the response display.
+- Real data from a test run, demonstrating the end-to-end workflow.
+
+This is useful for sharing results, documentation, or audits.
+
+---
 
 ## System Overview & Agent Flow
 
@@ -39,7 +93,6 @@ flowchart TD
 5. **Validation**: The validation agent checks for missing documents, inconsistencies, and data quality issues.
 6. **Claim Decision**: The claim decision agent makes an automated approve/reject/pending decision with reasoning and confidence.
 7. **Response**: The API returns a structured JSON with all agent outputs, validation, and decision.
-
 
 ## Quick Start
 
